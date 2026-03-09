@@ -1,3 +1,5 @@
+![OpBento](https://firebasestorage.googleapis.com/v0/b/smartkaksha-fe32c.appspot.com/o/opbento%2Fmoin-dbudb8a50.png?alt=media)
+
 # 💫 About Me:
 🔹 Name: Moin Sheikh<br>🔹 AI & ML Enthusiast | Web Developer | Problem Solver<br>🔹 Passionate about building intelligent systems and scalable web solutions<br>🔹 Aspiring AI Engineer, but deeply interested in Web Development<br>🔹 Currently pursuing Bachelor of Engineering (Started on September 4, 2024)<br>🔹 Skilled in Python, Java, C (learning), React.js, AI/ML frameworks<br>🔹 Completed AI/ML certifications (AWS, Azure) and multiple internships<br>🔹 Participated in hackathons & ideathons (Innovate India 2025, NxtWave AI Workshop)<br>🔹 Love solving problems, collaborating, and working on innovative projects
 
