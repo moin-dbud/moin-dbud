@@ -23,6 +23,13 @@ export const fetchBentoUrl = async (apiUrl: string): Promise<string> => {
   }
 };
 
+const addCacheBuster = (url: string): string => {
+  const parsed = new URL(url);
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  parsed.searchParams.set("ghcache", timestamp);
+  return parsed.toString();
+};
+
 export const updateReadmeWithBentoUrl = async (
   readmePath: string = path.join(process.cwd(), "README.md"),
   imageUrl: string
@@ -41,8 +48,9 @@ export const updateReadmeWithBentoUrl = async (
 
 const main = async (): Promise<void> => {
   const bentoUrl = await fetchBentoUrl(apiUrl);
+  const cacheBustedUrl = addCacheBuster(bentoUrl);
   const readmePath = process.env.README_PATH || path.join(process.cwd(), "README.md");
-  await updateReadmeWithBentoUrl(readmePath, bentoUrl);
+  await updateReadmeWithBentoUrl(readmePath, cacheBustedUrl);
 };
 
 await main();
