@@ -1,1 +1,1 @@
-![OpBento](https://opbento.vercel.app/api/bento/image?g=moin-dbud&z=5d512&ghcache=2026-08-26T01-04-09-962Z)
+![OpBento](https://opbento.vercel.app/api/bento/image?g=moin-dbud&z=8e9f6)
