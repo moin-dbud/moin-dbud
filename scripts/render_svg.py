@@ -482,7 +482,7 @@ def render(stats, config):
     body.append(build_heatmap(calendar, MARGIN + 56, y5 + 76, CONTENT_W - 76, h5 - 92))
 
     # ---------------- Attribution ----------------
-    body.append(text(W / 2, 1076, "✦ GitFrame ✦", size=19, weight="500", fill="#5a627a", anchor="middle",
+    body.append(text(W / 2, 1076, "✦ GitFrame ✦", size=17, weight="500", fill="#5a627a", anchor="middle",
                      family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"))
 
     svg = parts[0] + f"<defs>{''.join(defs)}</defs>" + "".join(body) + "</svg>"
