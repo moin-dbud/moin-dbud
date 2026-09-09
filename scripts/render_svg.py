@@ -176,6 +176,17 @@ def photo_data_uri(config):
     return f"data:image/{mime};base64,{b64}"
 
 
+def format_date_range(a_iso, b_iso):
+    """'2026-09-21' + '2026-10-21' -> 'Sep 21 - Oct 21' (adds the year if it changes)."""
+    if not a_iso or not b_iso:
+        return None
+    a = datetime.date.fromisoformat(a_iso)
+    b = datetime.date.fromisoformat(b_iso)
+    if a.year == b.year:
+        return f"{a.strftime('%b %d')} - {b.strftime('%b %d')}"
+    return f"{a.strftime('%b %d, %Y')} - {b.strftime('%b %d, %Y')}"
+
+
 def stat_card(defs, x, y, w, h, grad, icon_name, icon_color, label, value, value_color,
               subtitle=None, label_size=12.5, icon_size=18, label_x_offset=40, glow=True):
     start, end, gc = grad
@@ -188,11 +199,16 @@ def stat_card(defs, x, y, w, h, grad, icon_name, icon_color, label, value, value
     return out
 
 
+MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+
 def build_heatmap(days, x, y, w, h):
     cell_gap = 3
     cols = 53
+    top_pad = 16  # reserved for month labels above the grid
+
     cell = (w - (cols - 1) * cell_gap) / cols
-    cell = min(cell, (h - (6 * cell_gap)) / 7)
+    cell = min(cell, (h - top_pad - (6 * cell_gap)) / 7)
 
     by_date = {d["date"]: d["count"] for d in days}
     today = datetime.date.today()
@@ -211,30 +227,44 @@ def build_heatmap(days, x, y, w, h):
     day_labels = {1: "Mon", 3: "Wed", 5: "Fri"}
     svg = [f'<g transform="translate({x:.1f},{y:.1f})">']
     for row, label in day_labels.items():
-        cy = row * (cell + cell_gap) + cell * 0.8
+        cy = top_pad + row * (cell + cell_gap) + cell * 0.8
         svg.append(text(-10, cy, label, size=10.5, fill="#9aa0b3", anchor="end"))
+
+    def flush_column(col_idx, cells, month_label):
+        cx = col_idx * (cell + cell_gap)
+        delay = col_idx * 0.012
+        out = [f'<g opacity="0">'
+               f'<animate attributeName="opacity" from="0" to="1" begin="{delay:.3f}s" dur="0.5s" fill="freeze"/>']
+        for r, c in cells:
+            cy = top_pad + r * (cell + cell_gap)
+            out.append(f'<rect x="{cx:.1f}" y="{cy:.1f}" width="{cell:.1f}" height="{cell:.1f}" rx="2.5" fill="{c}"/>')
+        out.append('</g>')
+        if month_label:
+            out.append(text(cx, top_pad - 5, month_label, size=10.5, fill="#9aa0b3"))
+        return "".join(out)
 
     # build column-by-column so each week can fade in with a small stagger
     d = start
     col = 0
     col_cells = []
+    col_month_label = None
     while d <= today:
         row = (d.weekday() + 1) % 7
         cnt = by_date.get(d.isoformat(), 0)
         color = colors[bucket(cnt)]
         col_cells.append((row, color))
+        if d.day == 1:
+            col_month_label = MONTH_ABBR[d.month - 1]
         if row == 6:
-            delay = col * 0.012
-            cx = col * (cell + cell_gap)
-            svg.append(f'<g opacity="0">'
-                       f'<animate attributeName="opacity" from="0" to="1" begin="{delay:.3f}s" dur="0.5s" fill="freeze"/>')
-            for r, c in col_cells:
-                cy = r * (cell + cell_gap)
-                svg.append(f'<rect x="{cx:.1f}" y="{cy:.1f}" width="{cell:.1f}" height="{cell:.1f}" rx="2.5" fill="{c}"/>')
-            svg.append('</g>')
+            svg.append(flush_column(col, col_cells, col_month_label))
             col_cells = []
+            col_month_label = None
             col += 1
         d += datetime.timedelta(days=1)
+    if col_cells:
+        # the current, still-in-progress week never reaches Saturday, so it
+        # never hit the row==6 branch above -- flush it here or it silently vanishes
+        svg.append(flush_column(col, col_cells, col_month_label))
     svg.append("</g>")
     return "".join(svg)
 
@@ -445,7 +475,7 @@ def render(stats, config):
     body.append(icon("commit", c2x + 16, yc + 16, 16, "#34d399"))
     body.append(text(c2x + 40, yc + 29, "Commits", size=13, weight="600"))
     body.append(text(c2x + 16, yc + 62, str(stats["total_commits"]), size=24, weight="800", fill="#34d399"))
-    body.append(text(c2x + 16, yc + 78, "Total commits", size=10.5, fill="#9aa0b3"))
+    body.append(text(c2x + 16, yc + 78, "All-time commits", size=10.5, fill="#9aa0b3"))
     body.append(sparkline(weekly, c2x + 16, yc + 90, col4_w - 32, bot_h - 100, "#34d399"))
 
     # Total Contributions (top) / Longest Streak (bottom)
@@ -454,8 +484,14 @@ def render(stats, config):
                            f'{last_year_total/1000:.1f}k' if last_year_total >= 1000 else last_year_total,
                            "#facc15", "Last year"))
     yls = y4 + top_h + GAP
-    body.append(stat_card(defs, c3x, yls, col4_w, bot_h, ("#2a1a4a", "#08040f", "#c084fc"), "trophy", "#facc15",
-                           "Longest Streak", streaks["longest"], "#facc15", "Days"))
+    body.append(card_bg(defs, c3x, yls, col4_w, bot_h, "#2a1a4a", "#08040f", glow="#c084fc"))
+    body.append(icon("trophy", c3x + 12, yls + 12, 18, "#facc15"))
+    body.append(text(c3x + 40, yls + 12 + 18 * 0.72, "Longest Streak", size=12.5, weight="500", fill="#c7cdde"))
+    body.append(text(c3x + 14, yls + 88, str(streaks["longest"]), size=26, weight="800", fill="#facc15"))
+    body.append(text(c3x + 14, yls + 104, "Days", size=10.5, fill="#9aa0b3"))
+    streak_range = format_date_range(streaks.get("longest_from"), streaks.get("longest_to"))
+    if streak_range:
+        body.append(text(c3x + 14, yls + 120, streak_range, size=9.5, fill="#9aa0b3"))
 
     # Current Streak
     body.append(card_bg(defs, c4x, y4, col4_w, h4, "#4a1420", "#0a0508", glow="#fb7185"))
