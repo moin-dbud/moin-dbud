@@ -1,24 +1,13 @@
 {
   "github_login": "moin-dbud",
-  "display_name": "Moin",
-  "greeting": "Hey I'm",
-  "photo_path": "assets/photo.jpeg",
-  "social_cards": [
-    { "label": "@Moin_Sheikh09", "url": "https://twitter.com/Moin_Sheikh09", "color": "#1d4ed8" },
-    { "label": "@moin-build", "url": "https://github.com/moin-build", "color": "#1e3a8a" },
-    { "label": "www.moinsheikh.in", "url": "https://www.moinsheikh.in", "color": "#e5e7eb", "text_dark": true }
-  ],
-  "username_card_color": "#db2777",
-  "theme": {
-    "background": "#000000",
-    "card_bg": "#111111",
-    "text_primary": "#ffffff",
-    "text_secondary": "#9ca3af",
-    "accent_gold": "#d4a017",
-    "accent_pink": "#ec4899",
-    "accent_orange": "#f97316",
-    "accent_green": "#22c55e",
-    "accent_blue": "#3b82f6"
+  "display_name": "Moin Sheikh",
+  "tagline": "Building cool things, one commit at a time.",
+  "tags": ["Developer", "Problem Solver", "Lifelong Learner"],
+  "photo_path": "assets/photo.jpg",
+  "links": {
+    "twitter": { "handle": "@Moin_Sheikh09", "url": "https://x.com/Moin_Sheikh09" },
+    "linkedin": { "handle": "linkedin.com/in/moin-sheikh", "url": "https://linkedin.com/in/moin-sheikh" },
+    "website": { "label": "moinsheikh.in", "url": "https://www.moinsheikh.in" }
   },
   "output_svg_path": "bento.svg",
   "readme_path": "README.md"

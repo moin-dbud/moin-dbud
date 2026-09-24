@@ -26,8 +26,13 @@ Put a `.jpg`/`.png` at `assets/photo.jpg` (or change `photo_path` in
 external hosting or broken links.
 
 ## 3. Edit config.json
-Set `github_login` to your username, tweak `display_name`, the social
-card labels/links/colors, and theme colors to taste.
+Set `github_login`, `display_name`, `tagline`, and up to 3 `tags`
+(pills under the intro). Under `links`, fill in your `twitter`,
+`linkedin`, and `website` handles/URLs — these are the labels shown
+on the card (the URLs aren't clickable inside a raw SVG on GitHub, so
+if you want them clickable, wrap the image in a markdown link in
+`README.md`, e.g. `[![bento](bento.svg)](https://x.com/you)` — though
+that makes the *whole* card one link, not per-card).
 
 ## 4. Create a token (only needed for private contribution counts)
 The default `GITHUB_TOKEN` that Actions provides works fine for public
@@ -36,7 +41,6 @@ stats. If you want private repo contributions counted too:
    Fine-grained token (or classic with `read:user`, `repo` scopes).
 2. In your profile repo: Settings → Secrets and variables → Actions →
    New repository secret → name it `BENTO_TOKEN`, paste the token.
-   
 
 The workflow already prefers `BENTO_TOKEN` if present and falls back
 to the built-in token otherwise.
