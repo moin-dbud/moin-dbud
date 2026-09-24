@@ -30,12 +30,36 @@ def text(x, y, s, size=14, weight="400", fill="#fff", anchor="start", family="Se
     )
 
 
-def photo_data_uri(path):
-    if not path or not os.path.exists(path):
+IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp", ".gif")
+
+
+def resolve_photo_path(configured_path):
+    """Match the configured path exactly if it exists; otherwise fall back
+    to any file with the same name but a different extension/case in the
+    same folder, so a .jpg-vs-.png mismatch never silently breaks the card."""
+    if not configured_path:
         return None
-    ext = os.path.splitext(path)[1].lstrip(".").lower()
+    if os.path.exists(configured_path):
+        return configured_path
+
+    directory = os.path.dirname(configured_path) or "."
+    stem = os.path.splitext(os.path.basename(configured_path))[0].lower()
+    if not os.path.isdir(directory):
+        return None
+    for fname in sorted(os.listdir(directory)):
+        name, ext = os.path.splitext(fname)
+        if name.lower() == stem and ext.lower() in IMAGE_EXTS:
+            return os.path.join(directory, fname)
+    return None
+
+
+def photo_data_uri(path):
+    resolved = resolve_photo_path(path)
+    if not resolved:
+        return None
+    ext = os.path.splitext(resolved)[1].lstrip(".").lower()
     mime = "jpeg" if ext in ("jpg", "jpeg") else ext
-    with open(path, "rb") as f:
+    with open(resolved, "rb") as f:
         b64 = base64.b64encode(f.read()).decode()
     return f"data:image/{mime};base64,{b64}"
 
