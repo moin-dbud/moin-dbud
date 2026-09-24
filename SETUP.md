@@ -21,9 +21,18 @@ your-profile-repo/
 ```
 
 ## 2. Add your photo
-Put a `.jpg`/`.png` at `assets/photo.jpg` (or change `photo_path` in
-`config.json`). It gets base64-embedded straight into the SVG, so no
-external hosting or broken links.
+Two options, tried in this order:
+- **`photo_url`** (recommended, since you have a portfolio site): set it in
+  `config.json` to a direct link to the image (e.g.
+  `https://yoursite.com/photo.jpg` — the URL has to resolve straight to the
+  image bytes, not an HTML page). The workflow downloads it fresh each run
+  and embeds it as base64, so the card never depends on the other site
+  being reachable at *viewing* time, only at *build* time.
+- **`photo_path`**: falls back to a local file (e.g. `assets/photo.jpg`)
+  if `photo_url` is empty or the download fails for any reason — the run
+  won't fail, it just falls back silently (a warning gets printed to the
+  Actions log). Any extension in `assets/` matching the filename works,
+  so a `.jpg` vs `.png` mismatch can't break it.
 
 ## 3. Edit config.json
 Set `github_login`, `display_name`, `tagline`, and up to 3 `tags`
@@ -81,3 +90,24 @@ causes for these bots:
 - The token used has expired or lacks the scope OpenBento's workflow
   expects for private-contribution stats.
 If it's one of those, you may not need to rebuild at all.
+
+## Design notes (gradients, glow, motion)
+- Every card uses a diagonal brand-color → near-black gradient plus a
+  soft blurred "glow" blob clipped to its rounded corners, instead of
+  a flat solid fill.
+- Motion is done with native SVG/SMIL (`<animate>`, `<animateTransform>`),
+  not JavaScript — GitHub's markdown sanitizer strips `<script>` tags
+  from embedded SVGs but leaves SMIL animation elements alone (this is
+  the same mechanism the popular "readme-typing-svg" project relies on,
+  so it's a well-trodden, reliable path). On load: the heatmap sweeps in
+  column-by-column, the commits sparkline draws itself in, and the
+  activity bars grow up — all one-time and settle ("freeze") into their
+  final state within about 1.5s. The streak flame and the two hero
+  numbers (Total Stars, Current Streak) keep a gentle continuous pulse.
+  If a future GitHub sanitizer update ever did strip these, the cards
+  degrade gracefully to their static end-state — nothing breaks.
+- A static image viewer (like opening the `.svg` file directly in some
+  tools) may not animate at all and can show the *pre-animation* frame
+  (e.g. bars flat, heatmap blank) since it doesn't execute SMIL — this
+  is a viewer limitation, not a bug; GitHub's own rendering (a browser)
+  handles it correctly.

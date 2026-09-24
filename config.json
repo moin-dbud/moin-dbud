@@ -3,7 +3,8 @@
   "display_name": "Moin Sheikh",
   "tagline": "Building cool things, one commit at a time.",
   "tags": ["Developer", "Problem Solver", "Lifelong Learner"],
-  "photo_path": "assets/photo.jpg",
+  "photo_url": "https://www.moinsheikh.in/profile.webp",
+  "photo_path": "assets/photo.webp",
   "links": {
     "twitter": { "handle": "@Moin_Sheikh09", "url": "https://x.com/Moin_Sheikh09" },
     "linkedin": { "handle": "linkedin.com/in/moin-sheikh", "url": "https://linkedin.com/in/moin-sheikh" },
