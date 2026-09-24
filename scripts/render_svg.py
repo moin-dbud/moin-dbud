@@ -318,11 +318,8 @@ def render(stats, config):
     col_right_w = W - MARGIN - col_right_x
 
     gx, gw = MARGIN, col_greet_w
-    body.append(rrect(gx, y1, gw, h1, "url(#greetGrad)"))
-    cid = uid("clip")
-    defs.append(f'<clipPath id="{cid}"><rect x="{gx}" y="{y1}" width="{gw}" height="{h1}" rx="16"/></clipPath>')
-    body.append(f'<g clip-path="url(#{cid})"><circle cx="{gx+gw*0.95}" cy="{y1+h1*0.05}" r="140" '
-                f'fill="#ffffff" opacity="0.10" filter="url(#blurSoft)"/></g>')
+    body.append(card_bg(defs, gx, y1, gw, h1, "#6b3ff2", "#2196f3", glow="#ffffff",
+                       glow_pos=(0.92, 0.08), glow_r_mult=0.78))
     body.append(f'<text x="{gx+24}" y="{y1+52}" font-size="26">👋</text>')
     body.append(text(gx + 24, y1 + 92, "Hey I'm", size=19, weight="400", fill="#e3e8ff"))
     body.append(text(gx + 24, y1 + 128, config["display_name"], size=30, weight="800"))
