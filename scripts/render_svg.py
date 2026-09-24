@@ -305,8 +305,8 @@ def render(stats, config):
     defs.append('<filter id="blurSoft" x="-60%" y="-60%" width="220%" height="220%">'
                  '<feGaussianBlur stdDeviation="22"/></filter>')
     defs.append('<linearGradient id="greetGrad" x1="0" y1="0" x2="1" y2="1">'
-                 '<stop offset="0" stop-color="#6b3ff2"/><stop offset="0.55" stop-color="#3f5ff0"/>'
-                 '<stop offset="1" stop-color="#2196f3"/></linearGradient>')
+                 '<stop offset="0" stop-color="#8b5cf6"/><stop offset="0.45" stop-color="#4338ca"/>'
+                 '<stop offset="1" stop-color="#0b1024"/></linearGradient>')
 
     body = [rrect(0, 0, W, 1070, "#020409", rx=26)]
 
@@ -318,8 +318,15 @@ def render(stats, config):
     col_right_w = W - MARGIN - col_right_x
 
     gx, gw = MARGIN, col_greet_w
-    body.append(card_bg(defs, gx, y1, gw, h1, "#6b3ff2", "#2196f3", glow="#ffffff",
-                       glow_pos=(0.92, 0.08), glow_r_mult=0.78))
+    body.append(rrect(gx, y1, gw, h1, "url(#greetGrad)"))
+    cid = uid("clip")
+    defs.append(f'<clipPath id="{cid}"><rect x="{gx}" y="{y1}" width="{gw}" height="{h1}" rx="16"/></clipPath>')
+    body.append(
+        f'<g clip-path="url(#{cid})">'
+        f'<circle cx="{gx+gw*0.92}" cy="{y1+h1*0.06}" r="130" fill="#c4b5fd" opacity="0.32" filter="url(#blurSoft)"/>'
+        f'<circle cx="{gx+gw*0.05}" cy="{y1+h1*0.98}" r="150" fill="#38bdf8" opacity="0.24" filter="url(#blurSoft)"/>'
+        f'</g>'
+    )
     body.append(f'<text x="{gx+24}" y="{y1+52}" font-size="26">👋</text>')
     body.append(text(gx + 24, y1 + 92, "Hey I'm", size=19, weight="400", fill="#e3e8ff"))
     body.append(text(gx + 24, y1 + 128, config["display_name"], size=30, weight="800"))
