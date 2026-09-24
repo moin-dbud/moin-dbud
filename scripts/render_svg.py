@@ -301,14 +301,15 @@ def render(stats, config):
     if not weekly:
         weekly = [0, 0]
 
-    parts = [f'<svg width="{W}" height="1070" viewBox="0 0 {W} 1070" xmlns="http://www.w3.org/2000/svg">']
+    H = 1100
+    parts = [f'<svg width="{W}" height="{H}" viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg">']
     defs.append('<filter id="blurSoft" x="-60%" y="-60%" width="220%" height="220%">'
                  '<feGaussianBlur stdDeviation="22"/></filter>')
     defs.append('<linearGradient id="greetGrad" x1="0" y1="0" x2="1" y2="1">'
                  '<stop offset="0" stop-color="#8b5cf6"/><stop offset="0.45" stop-color="#4338ca"/>'
                  '<stop offset="1" stop-color="#0b1024"/></linearGradient>')
 
-    body = [rrect(0, 0, W, 1070, "#020409", rx=26)]
+    body = [rrect(0, 0, W, H, "#020409", rx=26)]
 
     # ---------------- Row 1 ----------------
     y1, h1 = MARGIN, 300
@@ -467,7 +468,7 @@ def render(stats, config):
 
     # ---------------- Row 5 ----------------
     y5 = y4 + h4 + GAP
-    h5 = 1070 - MARGIN - y5
+    h5 = 200
     body.append(card_bg(defs, MARGIN, y5, CONTENT_W, h5, "#0d1830", "#03060d", glow="#3b82f6",
                          glow_pos=(0.9, 0.1), glow_r_mult=0.45))
     body.append(icon("calendar", MARGIN + 20, y5 + 22, 18, "#8fb4ff"))
@@ -479,6 +480,10 @@ def render(stats, config):
         body.append(rrect(legend_x + 34 + i * 16, y5 + 20, 12, 12, c, rx=3))
     body.append(text(legend_x + 34 + 5 * 16 + 8, y5 + 30, "More", size=10.5, fill="#9aa0b3"))
     body.append(build_heatmap(calendar, MARGIN + 56, y5 + 76, CONTENT_W - 76, h5 - 92))
+
+    # ---------------- Attribution ----------------
+    body.append(text(W / 2, 1076, "✦ GitFrame ↗", size=11, weight="500", fill="#5a627a", anchor="middle",
+                     family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace"))
 
     svg = parts[0] + f"<defs>{''.join(defs)}</defs>" + "".join(body) + "</svg>"
     return svg
