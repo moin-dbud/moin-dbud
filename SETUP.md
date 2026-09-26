@@ -43,16 +43,32 @@ if you want them clickable, wrap the image in a markdown link in
 `README.md`, e.g. `[![bento](bento.svg)](https://x.com/you)` — though
 that makes the *whole* card one link, not per-card).
 
-## 4. Create a token (only needed for private contribution counts)
-The default `GITHUB_TOKEN` that Actions provides works fine for public
-stats. If you want private repo contributions counted too:
+## 4. Create your token — REQUIRED (not optional)
+This is the fix for the "my numbers don't match my real GitHub profile"
+bug: the scripts query GitHub's API as `viewer` (i.e. "whoever this
+token belongs to") instead of `user(login: ...)`, because GitHub's API
+silently drops private-repo contributions from the `user(login:)` form
+— even with "Include private contributions" on in your settings — with
+no error, just a smaller number. `viewer` returns your true, complete
+graph, but only if the token actually belongs to you.
+
+**This means the default `GITHUB_TOKEN` Actions provides can no longer
+be used** — it represents the `github-actions` bot, not you, so
+`viewer` would resolve to the bot's own (empty) activity. You must set
+up a personal token:
 1. GitHub → Settings → Developer settings → Personal access tokens →
-   Fine-grained token (or classic with `read:user`, `repo` scopes).
+   generate one with `read:user` and `repo` scopes (classic PAT is
+   simplest). If you use a **fine-grained** PAT instead, set its
+   repository access to **"All repositories"** — scoping it to only
+   some repos silently drops activity on the rest, the same failure
+   mode as the bug this fixes.
 2. In your profile repo: Settings → Secrets and variables → Actions →
    New repository secret → name it `BENTO_TOKEN`, paste the token.
 
-The workflow already prefers `BENTO_TOKEN` if present and falls back
-to the built-in token otherwise.
+If `BENTO_TOKEN` is missing or wrong, the run now **fails loudly** with
+a specific error in the Actions log (which token/scope is missing, or
+whose account the token actually belongs to) instead of silently
+publishing undercounted stats like before.
 
 ## 5. Enable Actions permissions
 Repo → Settings → Actions → General → Workflow permissions →
@@ -80,6 +96,16 @@ common reason these bots fail.)
    pushes as `github-actions[bot]` — if nothing changed (e.g. you had
    no activity that day), it skips the commit so you don't get empty
    diffs every day.
+
+## If your stats look lower than your real GitHub profile
+This was an actual bug, not a misconfiguration on your end — see step 4
+above for the full explanation and fix. Quick version: if `github_login`
+in `config.json` doesn't match the account `BENTO_TOKEN` belongs to (or
+`BENTO_TOKEN` isn't set at all), the Actions run now fails with a clear
+error telling you exactly which of those is wrong, rather than quietly
+publishing undercounted numbers. If a run from before this fix already
+published a wrong `bento.svg`, just re-run the workflow once the token
+is set up correctly and it'll overwrite it with the real numbers.
 
 ## Debugging your current OpenBento failure
 Since you already have OpenBento running, before switching over it's

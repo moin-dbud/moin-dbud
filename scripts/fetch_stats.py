@@ -1,9 +1,18 @@
 """
 Fetches all the stats needed for the bento card from the GitHub API.
 
-Requires an environment variable GH_TOKEN (a PAT with `read:user` and
-`repo` scopes if you want private contributions counted) or falls back
-to the default GITHUB_TOKEN provided inside Actions (public data only).
+IMPORTANT: this queries `viewer { ... }`, not `user(login: ...)`. GitHub's
+GraphQL API treats the `user(login:)` form as a third-party lookup and
+silently omits private-repo contribution data even when "Include private
+contributions" is turned on in your profile settings -- it just quietly
+returns a smaller number, no error. `viewer` returns the complete graph
+for whoever the token belongs to.
+
+That means GH_TOKEN MUST be a personal access token that belongs to YOU
+(the BENTO_TOKEN secret from SETUP.md) -- not the default GITHUB_TOKEN
+Actions provides, which represents the github-actions bot, not you. If
+the token doesn't resolve to your account, this script fails loudly with
+an explanation rather than silently publishing wrong stats.
 """
 import os
 import sys
@@ -17,7 +26,7 @@ GITHUB_REST = "https://api.github.com"
 def _token():
     tok = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
     if not tok:
-        sys.exit("ERROR: set GH_TOKEN (or GITHUB_TOKEN) as an env var / secret.")
+        sys.exit("ERROR: set GH_TOKEN (the BENTO_TOKEN secret) as an env var / secret.")
     return tok
 
 
@@ -37,8 +46,9 @@ def gql(query, variables):
 
 
 PROFILE_QUERY = """
-query($login: String!) {
-  user(login: $login) {
+query {
+  viewer {
+    login
     name
     createdAt
     followers { totalCount }
@@ -52,8 +62,9 @@ query($login: String!) {
 """
 
 STARS_QUERY = """
-query($login: String!, $cursor: String) {
-  user(login: $login) {
+query($cursor: String) {
+  viewer {
+    login
     repositories(first: 100, ownerAffiliations: OWNER, isFork: false, after: $cursor) {
       totalCount
       nodes { stargazerCount }
@@ -64,8 +75,9 @@ query($login: String!, $cursor: String) {
 """
 
 CONTRIBUTIONS_QUERY = """
-query($login: String!, $from: DateTime!, $to: DateTime!) {
-  user(login: $login) {
+query($from: DateTime!, $to: DateTime!) {
+  viewer {
+    login
     contributionsCollection(from: $from, to: $to) {
       totalCommitContributions
       contributionCalendar {
@@ -79,19 +91,46 @@ query($login: String!, $from: DateTime!, $to: DateTime!) {
 }
 """
 
+TOKEN_HELP = (
+    "GitHub API returned no `viewer` data for a request that expected login "
+    "'{expected}'. This means GH_TOKEN isn't set up correctly:\n"
+    "  - It must be a personal access token that belongs to YOUR account "
+    "(the BENTO_TOKEN secret from SETUP.md), not the default GITHUB_TOKEN "
+    "Actions provides (that one represents the github-actions bot, not you, "
+    "so `viewer` would return the bot's own empty activity, not yours).\n"
+    "  - If it's a fine-grained PAT, it must have access to 'All repositories' "
+    "(or explicitly every private repo you want counted) -- a PAT scoped to "
+    "only some repos silently drops activity on the rest.\n"
+    "  - It needs 'read:user' and 'repo' scopes (classic PAT) so private "
+    "contributions are visible."
+)
+
+
+def _get_viewer(data, expected_login):
+    viewer = data.get("viewer")
+    if not viewer or not viewer.get("login"):
+        raise RuntimeError(TOKEN_HELP.format(expected=expected_login))
+    if expected_login and viewer["login"].lower() != expected_login.lower():
+        raise RuntimeError(
+            f"GH_TOKEN belongs to GitHub user '{viewer['login']}', but config.json's "
+            f"github_login is '{expected_login}'. Either point github_login at "
+            f"'{viewer['login']}', or swap in a token that belongs to '{expected_login}'."
+        )
+    return viewer
+
 
 def fetch_profile(login):
-    data = gql(PROFILE_QUERY, {"login": login})
-    return data["user"]
+    data = gql(PROFILE_QUERY, {})
+    return _get_viewer(data, login)
 
 
 def fetch_total_stars(login):
     cursor = None
     total = 0
-    contributed_to_forks_tracked = 0
     while True:
-        data = gql(STARS_QUERY, {"login": login, "cursor": cursor})
-        repos = data["user"]["repositories"]
+        data = gql(STARS_QUERY, {"cursor": cursor})
+        viewer = _get_viewer(data, login)
+        repos = viewer["repositories"]
         total += sum(n["stargazerCount"] for n in repos["nodes"])
         if repos["pageInfo"]["hasNextPage"]:
             cursor = repos["pageInfo"]["endCursor"]
@@ -114,12 +153,12 @@ def fetch_all_contribution_days(login, created_at_iso):
         data = gql(
             CONTRIBUTIONS_QUERY,
             {
-                "login": login,
                 "from": year_start.strftime("%Y-%m-%dT00:00:00Z"),
                 "to": year_end.strftime("%Y-%m-%dT23:59:59Z"),
             },
         )
-        cc = data["user"]["contributionsCollection"]
+        viewer = _get_viewer(data, login)
+        cc = viewer["contributionsCollection"]
         total_commits += cc["totalCommitContributions"]
         for week in cc["contributionCalendar"]["weeks"]:
             for day in week["contributionDays"]:
@@ -187,7 +226,7 @@ def collect_all(login):
     total_contributions = sum(d["count"] for d in days)
 
     return {
-        "login": login,
+        "login": profile["login"],
         "followers": profile["followers"]["totalCount"],
         "pull_requests": profile["pullRequests"]["totalCount"],
         "contributed_to": profile["repositoriesContributedTo"]["totalCount"],
@@ -195,7 +234,7 @@ def collect_all(login):
         "total_commits": total_commits,
         "total_contributions": total_contributions,
         "streaks": streaks,
-        "calendar": days,  # last ~365 days is what we render
+        "calendar": days,
     }
 
 
